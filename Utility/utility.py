@@ -23,3 +23,6 @@ def vec_hcat(vecs):
 
 def concat(lst: List[List[str]]) -> List[str]:
     return reduce(operator.add, lst, [])
+
+def zip_with(f, l1, l2): 
+    return fmap(f, zip(l1, l2))
