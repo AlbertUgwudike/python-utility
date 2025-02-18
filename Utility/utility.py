@@ -26,3 +26,6 @@ def concat(lst: List[List[str]]) -> List[str]:
 
 def zip_with(f, l1, l2): 
     return fmap(f, zip(l1, l2))
+
+def issubset(s1, s2):
+    return set(s1).issubset(set(s2))

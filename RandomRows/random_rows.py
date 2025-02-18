@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 from typing import List
-from Utility.utility import filter_nan, fmap, zip_with
+from Utility.utility import filter_nan, issubset
 
 COL_CD63 = "Corrected CD63"
 COL_PFR  = "Corrected PFR"
@@ -20,19 +20,38 @@ def random_rows():
     dfs_pfr     = [ extract_rows(*p, COL_PFR) for p in fn_sheets ]
     dfs         = [ pd.concat(p, axis=1) for p in zip(dfs_cd63, dfs_pfr) ]
 
+    settings = [
+        ("CD63_p30_TIGIT", dfs_cd63, ["ICAM", "p30", "TIGIT", "p30 + TIGIT"]),
+        ("CD63_p30_PD1", dfs_cd63, ["ICAM", "p30", "PD1", "p30 + PD1"]),
+        ("CD63_p30_KLRG", dfs_cd63, ["ICAM", "p30", "KLRG", "p30 + KLRG"]),
+        ("CD63_p30_2A", dfs_cd63, ["ICAM", "p30", "2A", "p30 + 2A"]),
+        ("PFR_p30_TIGIT", dfs_pfr, ["ICAM", "p30", "TIGIT", "p30 + TIGIT"]),
+        ("PFR_p30_PD1", dfs_pfr, ["ICAM", "p30", "PD1", "p30 + PD1"]),
+        ("PFR_p30_KLRG", dfs_pfr, ["ICAM", "p30", "KLRG", "p30 + KLRG"]),
+        ("PFR_p30_2A", dfs_pfr, ["ICAM", "p30", "2A", "p30 + 2A"]),
+    ]
+    
     for i, df in enumerate(dfs):
         df.to_csv(f"{OUT_DIR}{names[i]}.csv")
+
+    for (fn, data, sheet_names) in settings:
+        df = organise_dfs(data, names, sheet_names)
+        df.to_csv(f"{OUT_DIR}{fn}.csv")
+
+def organise_dfs(dfs: List[pd.DataFrame], replicate_names: List[str], sheet_names: List[str]) -> pd.DataFrame:
+    dfs1 = [ df for df in dfs if issubset(sheet_names, df.columns)]
+    dfs2 = [ df[sheet_names] for df in dfs1 ]
+    dfs3 = [ pd.concat((pd.DataFrame(np.repeat(rn, len(df)), columns=["Name"]), df), axis=1) for (df, rn) in zip(dfs2, replicate_names) ]
+    return pd.concat(dfs3, axis=0)
+
 
 def extract_rows(xls_fn: str, sheet_names: List[str], col: str) -> pd.DataFrame:
     print(xls_fn, col)
     n_samples = least_count(xls_fn, len(sheet_names))
     dfs  = [ pd.read_excel(xls_fn, sn) for sn in sheet_names ]
     vecs = [ extract(df, n_samples, col) for df in dfs ]
-    cols = [ f"{col} {sn}" for sn in sheet_names ]
     data = np.hstack(vecs)
-    means = data.mean(0, keepdims=True)
-    data_with_means = np.vstack([data, np.zeros(means.shape), means])
-    return pd.DataFrame(data=data_with_means, columns=cols)
+    return pd.DataFrame(data=data, columns=sheet_names, index=None)
 
 def extract(df: pd.DataFrame, n_samples: int, col: str) -> np.ndarray:
     out = n_random_rows(read_col(df, col), n_samples)
@@ -40,6 +59,7 @@ def extract(df: pd.DataFrame, n_samples: int, col: str) -> np.ndarray:
 
 def n_random_rows(arr: np.ndarray, n_samples: int) -> np.ndarray:
     arr_cp = arr.copy()
+    np.random.seed(42)
     np.random.shuffle(arr_cp)
     return arr_cp[:n_samples]
 
