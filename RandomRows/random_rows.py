@@ -23,12 +23,14 @@ def random_rows():
     settings = [
         ("CD63_p30_TIGIT", dfs_cd63, ["ICAM", "p30", "TIGIT", "p30 + TIGIT"]),
         ("CD63_p30_PD1", dfs_cd63, ["ICAM", "p30", "PD1", "p30 + PD1"]),
-        ("CD63_p30_KLRG", dfs_cd63, ["ICAM", "p30", "KLRG", "p30 + KLRG"]),
+        ("CD63_p30_KLRG1", dfs_cd63, ["ICAM", "p30", "KLRG1", "p30 + KLRG1"]),
         ("CD63_p30_2A", dfs_cd63, ["ICAM", "p30", "2A", "p30 + 2A"]),
+        ("CD63_p30_LILRB1", dfs_cd63, ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
         ("PFR_p30_TIGIT", dfs_pfr, ["ICAM", "p30", "TIGIT", "p30 + TIGIT"]),
         ("PFR_p30_PD1", dfs_pfr, ["ICAM", "p30", "PD1", "p30 + PD1"]),
-        ("PFR_p30_KLRG", dfs_pfr, ["ICAM", "p30", "KLRG", "p30 + KLRG"]),
+        ("PFR_p30_KLRG1", dfs_pfr, ["ICAM", "p30", "KLRG1", "p30 + KLRG1"]),
         ("PFR_p30_2A", dfs_pfr, ["ICAM", "p30", "2A", "p30 + 2A"]),
+        ("PFR_p30_LILRB1", dfs_pfr, ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
     ]
     
     for i, df in enumerate(dfs):
