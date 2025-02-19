@@ -8,8 +8,8 @@ from Utility.utility import filter_nan, issubset
 COL_CD63 = "Corrected CD63"
 COL_PFR  = "Corrected PFR"
 COL_REF  = "Background"
-IN_DIR  = "./RandomRows/csv_example/"
-OUT_DIR = "~/projects/python-utility/RandomRows/csv_out/"
+IN_DIR   = "./RandomRows/csv_example/"
+OUT_DIR  = "~/projects/python-utility/RandomRows/csv_out/"
 
 def random_rows():
     content     = [ fn for fn in os.listdir(IN_DIR) if ".xlsx" in fn ]
@@ -21,16 +21,16 @@ def random_rows():
     dfs         = [ pd.concat(p, axis=1) for p in zip(dfs_cd63, dfs_pfr) ]
 
     settings = [
-        ("CD63_p30_TIGIT", dfs_cd63, ["ICAM", "p30", "TIGIT", "p30 + TIGIT"]),
-        ("CD63_p30_PD1", dfs_cd63, ["ICAM", "p30", "PD1", "p30 + PD1"]),
-        ("CD63_p30_KLRG1", dfs_cd63, ["ICAM", "p30", "KLRG1", "p30 + KLRG1"]),
-        ("CD63_p30_2A", dfs_cd63, ["ICAM", "p30", "2A", "p30 + 2A"]),
+        ("CD63_p30_TIGIT" , dfs_cd63, ["ICAM", "p30", "TIGIT" , "p30 + TIGIT" ]),
+        ("CD63_p30_PD1"   , dfs_cd63, ["ICAM", "p30", "PD1"   , "p30 + PD1"   ]),
+        ("CD63_p30_KLRG1" , dfs_cd63, ["ICAM", "p30", "KLRG1" , "p30 + KLRG1" ]),
+        ("CD63_p30_2A"    , dfs_cd63, ["ICAM", "p30", "2A"    , "p30 + 2A"    ]),
         ("CD63_p30_LILRB1", dfs_cd63, ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
-        ("PFR_p30_TIGIT", dfs_pfr, ["ICAM", "p30", "TIGIT", "p30 + TIGIT"]),
-        ("PFR_p30_PD1", dfs_pfr, ["ICAM", "p30", "PD1", "p30 + PD1"]),
-        ("PFR_p30_KLRG1", dfs_pfr, ["ICAM", "p30", "KLRG1", "p30 + KLRG1"]),
-        ("PFR_p30_2A", dfs_pfr, ["ICAM", "p30", "2A", "p30 + 2A"]),
-        ("PFR_p30_LILRB1", dfs_pfr, ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
+        ("PFR_p30_TIGIT"  , dfs_pfr , ["ICAM", "p30", "TIGIT" , "p30 + TIGIT" ]),
+        ("PFR_p30_PD1"    , dfs_pfr , ["ICAM", "p30", "PD1"   , "p30 + PD1"   ]),
+        ("PFR_p30_KLRG1"  , dfs_pfr , ["ICAM", "p30", "KLRG1" , "p30 + KLRG1" ]),
+        ("PFR_p30_2A"     , dfs_pfr , ["ICAM", "p30", "2A"    , "p30 + 2A"    ]),
+        ("PFR_p30_LILRB1" , dfs_pfr , ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
     ]
     
     for i, df in enumerate(dfs):
@@ -38,12 +38,13 @@ def random_rows():
 
     for (fn, data, sheet_names) in settings:
         df = organise_dfs(data, names, sheet_names)
-        df.to_csv(f"{OUT_DIR}{fn}.csv")
+        df.to_csv(f"{OUT_DIR}{fn}.csv", index=False)
 
 def organise_dfs(dfs: List[pd.DataFrame], replicate_names: List[str], sheet_names: List[str]) -> pd.DataFrame:
     dfs1 = [ df for df in dfs if issubset(sheet_names, df.columns)]
     dfs2 = [ df[sheet_names] for df in dfs1 ]
-    dfs3 = [ pd.concat((pd.DataFrame(np.repeat(rn, len(df)), columns=["Name"]), df), axis=1) for (df, rn) in zip(dfs2, replicate_names) ]
+    f = lambda p: (pd.DataFrame(np.repeat(p[1], len(p[0])), columns=["Name"]), p[0])
+    dfs3 = [ pd.concat(f(p), axis=1) for p in zip(dfs2, replicate_names) ]
     return pd.concat(dfs3, axis=0)
 
 
