@@ -77,6 +77,3 @@ def read_col(df: pd.DataFrame, col_name: str) -> np.ndarray:
     return filter_nan(df[col_name].to_numpy())
 
 
-
-
-

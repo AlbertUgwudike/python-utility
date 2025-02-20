@@ -1,8 +1,13 @@
 import sys
 import numpy as np
 import operator
+import re
+
 from typing import List
 
+
+
+from matplotlib.colors import ListedColormap
 from functools import reduce
 
 def handle_args(args_dict, module_name):
@@ -29,3 +34,15 @@ def zip_with(f, l1, l2):
 
 def issubset(s1, s2):
     return set(s1).issubset(set(s2))
+
+def cmap(idx):
+    N = 1024
+    vals = np.zeros((N, 4))
+    vals[:, 2 - idx] = np.linspace(0, 1, N)
+    vals[:, 3] = 1
+    return ListedColormap(vals)
+
+def exact_in(str1: str, str2: str) -> bool:
+    pattern = rf"((_|-){str1}[^+])"
+    res = re.search(pattern, str2)
+    return res is not None
