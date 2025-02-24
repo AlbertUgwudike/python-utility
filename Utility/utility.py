@@ -41,8 +41,3 @@ def cmap(idx):
     vals[:, 2 - idx] = np.linspace(0, 1, N)
     vals[:, 3] = 1
     return ListedColormap(vals)
-
-def exact_in(str1: str, str2: str) -> bool:
-    pattern = rf"((_|-){str1}[^+])"
-    res = re.search(pattern, str2)
-    return res is not None
