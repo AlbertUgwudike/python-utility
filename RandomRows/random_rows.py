@@ -34,10 +34,17 @@ def random_rows():
     ]
     
     for i, df in enumerate(dfs):
-        df.to_csv(f"{OUT_DIR}{names[i]}.csv")
+        data = df.iloc[:, :].to_numpy()
+        means = data.mean(0)
+        data_means = np.vstack((data, np.zeros(means.shape), means))
+        n_cols = len(df.columns) // 2
+        cd63_cols = [ "CD63 " + n for n in df.columns[:n_cols] ]
+        pfr_cols  = [ "PFR "  + n for n in df.columns[n_cols:] ]
+        out_df = pd.DataFrame(data=data_means, columns=cd63_cols + pfr_cols)
+        out_df.to_csv(f"{OUT_DIR}{names[i]}.csv")
 
     for (fn, data, sheet_names) in settings:
-        df = organise_dfs(data, names, sheet_names)
+        df = organise_dfs(data, names, sheet_names).sort_values('Name', key=sort_tform)
         df.to_csv(f"{OUT_DIR}{fn}.csv", index=False)
 
 def organise_dfs(dfs: List[pd.DataFrame], replicate_names: List[str], sheet_names: List[str]) -> pd.DataFrame:
@@ -76,4 +83,7 @@ def least_count(xls_fn, n_sheets):
 def read_col(df: pd.DataFrame, col_name: str) -> np.ndarray:
     return filter_nan(df[col_name].to_numpy())
 
-
+def sort_tform(col: pd.Series) -> pd.Series:
+    tmp1 = col.map(lambda e: e[3:])
+    tmp2 = tmp1.map(lambda e: e if e[0] == '2' else e[4:] + e[2:4] + e[:2])
+    return tmp2
