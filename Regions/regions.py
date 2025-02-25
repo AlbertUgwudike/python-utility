@@ -4,12 +4,15 @@ import pandas as pd
 
 from typing import List, Tuple
 from Figures.Desc import Desc, Channel as CH
+from RandomRows.random_rows import organise_dfs, sort_tform
+from RandomRows.data import condition_df_layout
 from .data import donors
 
 IMG_SIZE = (512, 512)
 XLS_DIR  = "./RandomRows/csv_example/"
 CSV_DIR  = "./RandomRows/csv_out/"
 OUT_DIR  = "./Regions/csv_out/"
+ORG_DIR  = "./Regions/csv_org/"
 CD63_COL = 10
 PFR_COL  = 14
 BG_ROW   = 2
@@ -19,6 +22,20 @@ def regions():
         print("Processing", d_id)
         df = process(d_id, donor)
         df.to_csv(f"{OUT_DIR}{d_id}.csv")
+
+def regions_by_condition():
+    names   = [ fn.replace(".csv", "") for fn in os.listdir(OUT_DIR) ]
+    csv_fns = [ f"{OUT_DIR}{fn}.csv" for fn in names ]
+    csvs    = [ pd.read_csv(csv_fn) for csv_fn in csv_fns ]
+    dfs     = ([ select_cols(df, "CD63") for df in csvs ], [ select_cols(df, "PFR") for df in csvs ])
+
+    for (fn, idx, sheet_names) in condition_df_layout:
+        df = organise_dfs(dfs[idx.value], names, sheet_names).sort_values('Name', key=sort_tform)
+        df.to_csv(f"{ORG_DIR}{fn}.csv", index=False)
+
+def select_cols(df: pd.DataFrame, marker: str) -> pd.DataFrame:
+    parition = df[[col for col in df.columns if marker in col]]
+    return parition.rename(columns = lambda c: c.replace(f"{marker} ", ""))
 
 def process(donor_id: str, shadow_data) -> pd.DataFrame:
     empty_vals = [ get_empty_vals(shadow_data, chn).mean() for chn in [CH.PFR, CH.CD63] ]
