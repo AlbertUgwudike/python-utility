@@ -2,37 +2,28 @@ import pandas as pd
 import numpy as np
 import os
 
-from typing import List
+from typing import List, Tuple
 from Utility.utility import filter_nan, issubset
+from .Plate import Plate as P
+from .data import condition_df_layout
 
 COL_CD63 = "Corrected CD63"
 COL_PFR  = "Corrected PFR"
 COL_REF  = "Background"
 IN_DIR   = "./RandomRows/csv_example/"
 OUT_DIR  = "~/projects/python-utility/RandomRows/csv_out/"
+OUT_DIR_T  = "~/projects/python-utility/RandomRows/csv_out_t/"
 
-def random_rows():
-    content     = [ fn for fn in os.listdir(IN_DIR) if ".xlsx" in fn ]
-    names       = [ fn.replace(".xlsx", "") for fn in content ]
-    fns         = [ IN_DIR + n for n in content ]
-    fn_sheets   = [ (fn, pd.ExcelFile(fn).sheet_names) for fn in fns ]
-    dfs_cd63    = [ extract_rows(*p, COL_CD63) for p in fn_sheets ]
-    dfs_pfr     = [ extract_rows(*p, COL_PFR) for p in fn_sheets ]
-    dfs         = [ pd.concat(p, axis=1) for p in zip(dfs_cd63, dfs_pfr) ]
+def random_rows_by_condition():
+    names, dfs = random_rows()
+    for (fn, idx, sheet_names) in condition_df_layout:
+        df = organise_dfs(dfs[idx.value], names, sheet_names).sort_values('Name', key=sort_tform)
+        df.to_csv(f"{OUT_DIR}{fn}.csv", index=False)
 
-    settings = [
-        ("CD63_p30_TIGIT" , dfs_cd63, ["ICAM", "p30", "TIGIT" , "p30 + TIGIT" ]),
-        ("CD63_p30_PD1"   , dfs_cd63, ["ICAM", "p30", "PD1"   , "p30 + PD1"   ]),
-        ("CD63_p30_KLRG1" , dfs_cd63, ["ICAM", "p30", "KLRG1" , "p30 + KLRG1" ]),
-        ("CD63_p30_2A"    , dfs_cd63, ["ICAM", "p30", "2A"    , "p30 + 2A"    ]),
-        ("CD63_p30_LILRB1", dfs_cd63, ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
-        ("PFR_p30_TIGIT"  , dfs_pfr , ["ICAM", "p30", "TIGIT" , "p30 + TIGIT" ]),
-        ("PFR_p30_PD1"    , dfs_pfr , ["ICAM", "p30", "PD1"   , "p30 + PD1"   ]),
-        ("PFR_p30_KLRG1"  , dfs_pfr , ["ICAM", "p30", "KLRG1" , "p30 + KLRG1" ]),
-        ("PFR_p30_2A"     , dfs_pfr , ["ICAM", "p30", "2A"    , "p30 + 2A"    ]),
-        ("PFR_p30_LILRB1" , dfs_pfr , ["ICAM", "p30", "LILRB1", "p30 + LILRB1"]),
-    ]
-    
+def random_rows_by_donor():
+    names, dfs_p = random_rows()
+    dfs = [ pd.concat(p, axis=1) for p in zip(dfs_p) ]
+
     for i, df in enumerate(dfs):
         data = df.iloc[:, :].to_numpy()
         means = data.mean(0)
@@ -43,17 +34,44 @@ def random_rows():
         out_df = pd.DataFrame(data=data_means, columns=cd63_cols + pfr_cols)
         out_df.to_csv(f"{OUT_DIR}{names[i]}.csv")
 
-    for (fn, data, sheet_names) in settings:
-        df = organise_dfs(data, names, sheet_names).sort_values('Name', key=sort_tform)
-        df.to_csv(f"{OUT_DIR}{fn}.csv", index=False)
+def threshold():
+    # CD63 = 1937.389    PFR = 381.372
+    # CD63 = 2000        PFR = 393
+    # CD63 = -63         PFR = -12
+    names, dfs_p = random_rows()
+    dfs = [ pd.concat(p, axis=1) for p in zip(*dfs_p) ]
+
+    for i, df in enumerate(dfs):
+        if "250206" not in names[i]: continue
+        data = df.iloc[:, :].to_numpy()
+        means = data.mean(0)
+        data_means = np.vstack((data, np.zeros(means.shape), means))
+        n_cols = len(df.columns) // 2
+        cd63_cols = [ "CD63 " + n for n in df.columns[:n_cols] ]
+        pfr_cols  = [ "PFR "  + n for n in df.columns[n_cols:] ]
+        out_df = pd.DataFrame(data=data_means, columns=cd63_cols + pfr_cols)
+        percs1 = (out_df[cd63_cols] > -63).sum(0).divide(len(out_df[cd63_cols])).mul(100).to_numpy()
+        percs2 = (out_df[pfr_cols] > -12).sum(0).divide(len(out_df[pfr_cols])).mul(100).to_numpy()
+        vals = np.concatenate((percs1, percs2), axis=0).T
+        percs = pd.DataFrame(data = np.expand_dims(vals, axis=0), columns=cd63_cols + pfr_cols)
+        out = pd.concat((out_df, percs), axis=0)
+        out.to_csv(f"{OUT_DIR_T}{names[i]}.csv")
+
+def random_rows() -> Tuple[List[str], Tuple[List[pd.DataFrame], List[pd.DataFrame]]]:
+    content     = [ fn for fn in os.listdir(IN_DIR) if ".xlsx" in fn ]
+    names       = [ fn.replace(".xlsx", "") for fn in content ]
+    fns         = [ IN_DIR + n for n in content ]
+    fn_sheets   = [ (fn, pd.ExcelFile(fn).sheet_names) for fn in fns ]
+    dfs_cd63    = [ extract_rows(*p, COL_CD63) for p in fn_sheets ]
+    dfs_pfr     = [ extract_rows(*p, COL_PFR) for p in fn_sheets ]
+    return (names, (dfs_cd63, dfs_pfr))
 
 def organise_dfs(dfs: List[pd.DataFrame], replicate_names: List[str], sheet_names: List[str]) -> pd.DataFrame:
-    dfs1 = [ df for df in dfs if issubset(sheet_names, df.columns)]
-    dfs2 = [ df[sheet_names] for df in dfs1 ]
+    dfs1 = [ (df, rn) for (df, rn) in zip(dfs, replicate_names) if issubset(sheet_names, df.columns)]
+    dfs2 = [ (df[sheet_names], rn) for (df, rn) in dfs1 ]
     f = lambda p: (pd.DataFrame(np.repeat(p[1], len(p[0])), columns=["Name"]), p[0])
-    dfs3 = [ pd.concat(f(p), axis=1) for p in zip(dfs2, replicate_names) ]
+    dfs3 = [ pd.concat(f(p), axis=1) for p in dfs2 ]
     return pd.concat(dfs3, axis=0)
-
 
 def extract_rows(xls_fn: str, sheet_names: List[str], col: str) -> pd.DataFrame:
     print(xls_fn, col)

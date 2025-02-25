@@ -50,18 +50,26 @@ class Desc:
         assert(len(folder_names) == 1)
         return folder_names[0]
     
+    def get_roi_fn(d) -> str:
+        folder_path = f"{d.get_folder_name()}/{ROI_BG_NAME}"
+        roi_fps = [folder_path + fn for fn in os.listdir(folder_path) if d.matches_fn(fn)]
+        assert(len(roi_fps) == 1)
+        return roi_fps[0]
+    
     def matches_fn(d, fn) -> bool:
         negatives = [c for c in Condition if c not in d.condition_id]
         present = all(c.to_str() in fn for c in d.condition_id)
         absent  = all(c.to_str() not in fn for c in negatives)
         return present and absent
     
-    def get_roi(d, img_n: int, sz: Tuple[int, int]) -> np.ndarray:
-        folder_path = f"{d.get_folder_name()}/{ROI_BG_NAME}"
-        roi_fps = [folder_path + fn for fn in os.listdir(folder_path) if d.matches_fn(fn)]
-        roi_fns = [f"{roi_fps[0]}/{fnn}" for fnn in os.listdir(roi_fps[0]) ]
-        rois = [ roiread(fnn) for fnn in roi_fns]
-        roi = next(filter(lambda roi: roi.t_position == img_n + 1, rois))
+    def get_roi(d, img_n: int) -> ImagejRoi:
+        rois = roiread(d.get_roi_fn())
+        if isinstance(rois, ImagejRoi): return rois 
+        roi = filter(lambda roi: roi.t_position == img_n + 1, rois)
+        return next(roi)
+
+    def get_roi_mask(d, img_n: int, sz: Tuple[int, int]) -> np.ndarray:
+        roi = d.get_roi(img_n)
         coords = [tuple(p) for p in roi.coordinates()]
         img = Image.new('L', sz, 0)
         ImageDraw.Draw(img).polygon(coords, outline=1, fill=1)
