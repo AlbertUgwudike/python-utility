@@ -69,7 +69,7 @@ def calc_perc(donor_id: str, ext: str, empty_val: float) -> np.ndarray:
     cols     = [ col.replace(ext, "") for col in s_cols ]
     bg_col   = CD63_COL if "CD63" in ext else PFR_COL
     bg_vals  = np.array([ empty_val - get_background_val(donor_id, sn, bg_col) for sn in cols ])
-    vals     = donor_df[s_cols].to_numpy()[:-2, :]
+    vals     = donor_df[s_cols].to_numpy()
     mask     = vals > np.expand_dims(bg_vals, 0).repeat(vals.shape[0], 0)
     percs    = 100 * mask.sum(0) / mask.shape[0]
     return pd.DataFrame(data=np.expand_dims(percs, 0), columns=s_cols)

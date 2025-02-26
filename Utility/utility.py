@@ -1,12 +1,8 @@
 import sys
 import numpy as np
 import operator
-import re
 
 from typing import List
-
-
-
 from matplotlib.colors import ListedColormap
 from functools import reduce
 

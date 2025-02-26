@@ -12,7 +12,8 @@ COL_PFR  = "Corrected PFR"
 COL_REF  = "Background"
 IN_DIR   = "./RandomRows/csv_example/"
 OUT_DIR  = "~/projects/python-utility/RandomRows/csv_out/"
-OUT_DIR_T  = "~/projects/python-utility/RandomRows/csv_out_t/"
+OUT_DIR_M  = "~/projects/python-utility/RandomRows/csv_means/"
+
 
 def random_rows_by_condition():
     names, dfs = random_rows()
@@ -22,18 +23,20 @@ def random_rows_by_condition():
 
 def random_rows_by_donor():
     names, dfs_p = random_rows()
-    dfs = [ pd.concat(p, axis=1) for p in zip(dfs_p) ]
+    dfs = [ pd.concat(p, axis=1) for p in zip(*dfs_p) ]
 
     for i, df in enumerate(dfs):
         data = df.iloc[:, :].to_numpy()
-        means = data.mean(0)
-        data_means = np.vstack((data, np.zeros(means.shape), means))
         n_cols = len(df.columns) // 2
         cd63_cols = [ "CD63 " + n for n in df.columns[:n_cols] ]
         pfr_cols  = [ "PFR "  + n for n in df.columns[n_cols:] ]
-        out_df = pd.DataFrame(data=data_means, columns=cd63_cols + pfr_cols)
+        out_df = pd.DataFrame(data=data, columns=cd63_cols + pfr_cols)
         out_df.to_csv(f"{OUT_DIR}{names[i]}.csv")
 
+def averages_per_donor():
+    for (fn, _, _) in condition_df_layout:
+        df = pd.read_csv(f"{OUT_DIR}{fn}.csv")
+        df.groupby(['Name']).mean().to_csv(f"{OUT_DIR_M}{fn}.csv")
 
 def random_rows() -> Tuple[List[str], Tuple[List[pd.DataFrame], List[pd.DataFrame]]]:
     content     = [ fn for fn in os.listdir(IN_DIR) if ".xlsx" in fn ]
