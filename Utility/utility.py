@@ -2,9 +2,14 @@ import sys
 import numpy as np
 import operator
 
-from typing import List
+from multiprocessing import Pool
+from typing import List, TypeVar, Tuple
 from matplotlib.colors import ListedColormap
 from functools import reduce
+from itertools import groupby
+
+T = TypeVar("T")
+U = TypeVar("U")
 
 def handle_args(args_dict, module_name):
     if len(sys.argv) != 2 or sys.argv[1] not in args_dict.keys(): 
@@ -17,6 +22,9 @@ def filter_nan(arr: np.ndarray):
 
 def fmap(f, lst):
     return list(map(f, lst))
+
+def filt(f, lst):
+    return list(filter(f, lst))
 
 def vec_hcat(vecs):
     f = lambda v: np.expand_dims(v, 1)
@@ -37,3 +45,31 @@ def cmap(idx):
     vals[:, 2 - idx] = np.linspace(0, 1, N)
     vals[:, 3] = 1
     return ListedColormap(vals)
+
+def gauss(mu: float, std: float, x: np.ndarray) -> np.ndarray:
+    factor = (1 / ((2 * np.pi * (std ** 2)))) ** 0.5
+    exp = ((x - mu) ** 2) / (-2 * std ** 2)
+    return factor * np.e ** exp
+
+def norm(mu: float, std: float, x: np.ndarray) -> np.ndarray:
+    return (x - mu) / std
+
+def parfor(f, args):
+    res = []
+    with Pool() as pool: 
+        res = pool.map(f, args)
+    return res
+
+def fst(tup: Tuple[T, U]) -> T:
+    return tup[0]
+
+def snd(tup: Tuple[T, U]) -> U:
+    return tup[1]
+
+def unzip(l): return list(zip(*l))
+
+def group_by(f, lst):
+    return fmap(lambda g: list(snd(g)), groupby(lst, key=f))
+
+def pad(lst, l, v):
+    return (lst + [v] * l)[:l]
