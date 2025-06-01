@@ -4,20 +4,20 @@ class Descriptor():
     
     def __init__(self, at, id_str, id_decoder_fcn, data):
         day, ident_str, rep = id_decoder_fcn(id_str)
-        self.day    = day
-        self.ident_str = ident_str
-        self.ident  = at[ident_str]
-        self.rep    = rep
-        self.data   = data
+        self.day        = day
+        self.ident_str  = ident_str
+        self.ident      = at[ident_str]
+        self.rep        = rep
+        self.data       = data
 
     def get(self, col_name):
         return self.data[col_name]
 
 
 def decoder_fnc(id_str):
-    day = int(id_str[1])
-    ident_str = id_str[3:-5]
-    rep = ord(id_str[-5]) - ord('A')
+    day         = int(id_str[1])
+    ident_str   = id_str[3:-5]
+    rep         = ord(id_str[-5]) - ord('A')
     return (day, ident_str, rep)
 
 assoc_table = {
