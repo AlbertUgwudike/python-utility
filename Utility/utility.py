@@ -73,3 +73,6 @@ def group_by(f, lst):
 
 def pad(lst, l, v):
     return (lst + [v] * l)[:l]
+
+def flatten(lst):
+    return [x for xs in lst for x in xs]
